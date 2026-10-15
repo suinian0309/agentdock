@@ -14,6 +14,8 @@
 /agentdock.bak*
 /bin/
 /dist/
+/dist-local/
+/dist-web*/
 /coverage.out
 /*.test
 /agentdock.killed*

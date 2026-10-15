@@ -29,6 +29,15 @@ type ConfigUpdateRequest struct {
 	ACPDefaultProfile       string
 }
 
+// ApplyConfigUpdate validates and persists desktop runtime configuration.
+// The operation keeps the existing transactional restart/rollback behavior.
+func ApplyConfigUpdate(ctx context.Context, request ConfigUpdateRequest) error {
+	if err := validateConfigUpdate(request); err != nil {
+		return err
+	}
+	return platformUpdateConfig(ctx, request)
+}
+
 func RunConfigCommand(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	if len(args) == 0 {
 		return configCommandUsageError()
@@ -93,10 +102,7 @@ func RunConfigCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 			ACPProfiles:             acpProfiles,
 			ACPDefaultProfile:       strings.TrimSpace(*acpDefaultProfile),
 		}
-		if err := validateConfigUpdate(request); err != nil {
-			return err
-		}
-		if err := platformUpdateConfig(ctx, request); err != nil {
+		if err := ApplyConfigUpdate(ctx, request); err != nil {
 			return err
 		}
 		_, err = fmt.Fprintln(stdout, `{"updated":true}`)

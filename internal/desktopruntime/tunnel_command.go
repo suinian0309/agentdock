@@ -28,6 +28,31 @@ func TunnelStatusForRuntime(ctx context.Context, runtimeRoot string) (TunnelStat
 	return platformTunnelStatus(ctx, runtimeRoot)
 }
 
+// ConfigureTunnelForRuntime applies the same validated and DPAPI-backed tunnel
+// configuration used by the native control panel.
+func ConfigureTunnelForRuntime(ctx context.Context, request TunnelConfigureRequest) error {
+	request.RuntimeRoot = strings.TrimSpace(request.RuntimeRoot)
+	request.Mode = strings.ToLower(strings.TrimSpace(request.Mode))
+	request.ServerURL = strings.TrimSpace(request.ServerURL)
+	request.TokenFile = strings.TrimSpace(request.TokenFile)
+	if request.RuntimeRoot == "" {
+		return errors.New("runtime-root 不能为空")
+	}
+	if request.Mode != "none" && request.Mode != "quick" && request.Mode != "named" {
+		return errors.New("tunnel configure 的 mode 必须是 none、quick 或 named")
+	}
+	return platformConfigureTunnel(ctx, request)
+}
+
+// TunnelActionForRuntime performs a tunnel lifecycle action without parsing
+// command output.
+func TunnelActionForRuntime(ctx context.Context, runtimeRoot, action string) error {
+	if action != "start" && action != "stop" && action != "restart" && action != "regenerate" {
+		return errors.New("不支持的 Tunnel 操作: " + action)
+	}
+	return platformTunnelAction(ctx, runtimeRoot, action)
+}
+
 type TunnelConfigureRequest struct {
 	RuntimeRoot string
 	Mode        string
@@ -96,7 +121,7 @@ func RunTunnelCommand(ctx context.Context, args []string, stdout, stderr io.Writ
 			ServerURL:   strings.TrimSpace(*serverURL),
 			TokenFile:   strings.TrimSpace(*tokenFile),
 		}
-		if err := platformConfigureTunnel(ctx, request); err != nil {
+		if err := ConfigureTunnelForRuntime(ctx, request); err != nil {
 			return err
 		}
 		return json.NewEncoder(stdout).Encode(serviceCommandResult{Action: "configure", Completed: true})

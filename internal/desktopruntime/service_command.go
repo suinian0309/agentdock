@@ -26,6 +26,21 @@ type serviceCommandResult struct {
 	Completed bool   `json:"completed"`
 }
 
+// ServiceStatusForRuntime returns the same read-only desktop service snapshot
+// used by the native control panel. It is also used by the loopback-only web
+// control panel, so callers do not need to parse localized CLI output.
+func ServiceStatusForRuntime(ctx context.Context, runtimeRoot string) (ServiceStatus, error) {
+	return platformServiceStatus(ctx, runtimeRoot)
+}
+
+// ServiceActionForRuntime performs a desktop service lifecycle action.
+func ServiceActionForRuntime(ctx context.Context, runtimeRoot, action string) error {
+	if action != "start" && action != "stop" && action != "restart" {
+		return fmt.Errorf("不支持的服务操作: %s", action)
+	}
+	return platformServiceAction(ctx, runtimeRoot, action)
+}
+
 func RunServiceCommand(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	if len(args) == 0 {
 		return serviceCommandUsageError()

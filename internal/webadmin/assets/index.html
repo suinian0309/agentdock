@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>AgentDock 本机管理台</title>
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand-lockup">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div>
+          <h1>AgentDock</h1>
+          <p>本机管理台 · 不依赖桌面运行库</p>
+        </div>
+      </div>
+      <div class="live-state" id="live-state"><i></i><span>正在读取状态</span></div>
+    </header>
+
+    <nav class="tabs" aria-label="管理区域">
+      <button class="tab active" data-tab="overview">概览</button>
+      <button class="tab" data-tab="public">公网访问</button>
+      <button class="tab" data-tab="advanced">高级设置</button>
+    </nav>
+
+    <main>
+      <section class="panel active" id="panel-overview">
+        <div class="status-rail">
+          <article class="status-cell"><span>Core 服务</span><strong id="service-state">读取中</strong></article>
+          <article class="status-cell"><span>健康检查</span><strong id="health-state">读取中</strong></article>
+          <article class="status-cell"><span>固定隧道</span><strong id="tunnel-state">读取中</strong></article>
+          <article class="status-cell"><span>版本</span><strong id="version-state">—</strong></article>
+        </div>
+
+        <div class="section-heading"><div><p class="eyebrow">CONNECTION</p><h2>连接地址</h2></div></div>
+        <div class="address-stack">
+          <label><span>本地 MCP</span><div class="copy-field"><code id="local-url">—</code><button data-copy="local-url">复制</button></div></label>
+          <label><span>公网 MCP</span><div class="copy-field"><code id="public-url">尚未配置</code><button data-copy="public-url">复制</button></div></label>
+        </div>
+
+        <div class="section-heading split"><div><p class="eyebrow">CREDENTIALS</p><h2>访问凭据</h2></div><p>只在本机管理会话中解密显示</p></div>
+        <div class="credential-grid">
+          <label><span>Bearer Token</span><div class="secret-field"><input id="bearer-token" type="password" readonly value="••••••••••••••••"><button class="reveal" data-reveal="bearer-token">显示</button></div></label>
+          <label><span>OAuth 密码</span><div class="secret-field"><input id="oauth-password" type="password" readonly value="••••••••••••••••"><button class="reveal" data-reveal="oauth-password">显示</button></div></label>
+        </div>
+
+        <div class="action-dock">
+          <div><p class="eyebrow">CORE</p><button class="button secondary" data-service="start">启动</button><button class="button secondary" data-service="stop">停止</button><button class="button primary" data-service="restart">重新启动</button></div>
+          <div><p class="eyebrow">RELEASE</p><button class="button secondary" id="check-update">检查更新</button><button class="button danger-quiet" id="run-update">安装更新</button></div>
+        </div>
+      </section>
+
+      <section class="panel" id="panel-public">
+        <div class="section-heading"><div><p class="eyebrow">CLOUDFLARE TUNNEL</p><h2>选择访问方式</h2></div></div>
+        <div class="mode-grid" role="radiogroup" aria-label="公网访问方式">
+          <label class="mode-card"><input type="radio" name="tunnel-mode" value="none"><span class="radio-mark"></span><strong>仅本机</strong><small>关闭 Cloudflare 隧道，只允许这台电脑上的客户端连接。</small></label>
+          <label class="mode-card"><input type="radio" name="tunnel-mode" value="quick"><span class="radio-mark"></span><strong>临时地址</strong><small>无需域名，适合短时测试；重启后地址可能变化。</small></label>
+          <label class="mode-card"><input type="radio" name="tunnel-mode" value="named"><span class="radio-mark"></span><strong>固定域名</strong><small>使用自己的 HTTPS 域名和 Cloudflare Tunnel Token。</small></label>
+        </div>
+
+        <div class="fixed-config" id="fixed-config">
+          <label><span>HTTPS 公网地址</span><input id="server-url" placeholder="https://agent.example.com" autocomplete="off"><small>只填 Origin，不要追加 /mcp。</small></label>
+          <label><span>Tunnel Token</span><input id="tunnel-token" type="password" placeholder="留空则继续使用已保存的 Token" autocomplete="new-password"><small id="token-state">尚未读取保存状态</small></label>
+        </div>
+
+        <div class="form-actions">
+          <button class="button primary" id="apply-tunnel">应用访问模式</button>
+          <button class="button secondary" id="restart-tunnel">重启 Tunnel</button>
+          <button class="button secondary" id="test-public">测试公网</button>
+        </div>
+        <div class="callout"><strong>管理页不会进入公网隧道</strong><span>Cloudflare 只转发 MCP 服务端口；本页面固定监听本机独立端口。</span></div>
+      </section>
+
+      <section class="panel" id="panel-advanced">
+        <div class="section-heading"><div><p class="eyebrow">RUNTIME</p><h2>Core 设置</h2></div><p>保存后会自动重启 Core</p></div>
+        <div class="form-grid">
+          <label><span>端口</span><input id="port" type="number" min="1" max="65535"></label>
+          <label><span>日志级别</span><select id="log-level"><option>debug</option><option>info</option><option>warn</option><option>error</option></select></label>
+          <label><span>聊天卡片</span><select id="mcp-apps-mode"><option value="full">完整</option><option value="compact">紧凑</option><option value="off">关闭</option></select></label>
+          <label><span>界面语言</span><select disabled><option>简体中文</option></select><small>本机管理台固定使用简体中文。</small></label>
+        </div>
+
+        <div class="section-heading"><div><p class="eyebrow">BROWSER</p><h2>浏览器连接</h2></div></div>
+        <div class="browser-row">
+          <label><span>连接方式</span><select id="browser-mode"><option value="off">关闭浏览器工具</option><option value="isolated">隔离浏览器</option><option value="reuse">复用本机唯一 CDP 浏览器</option><option value="cdp">指定 CDP 地址</option></select></label>
+          <label id="cdp-field"><span>CDP 地址</span><input id="browser-cdp-url" placeholder="http://127.0.0.1:9222"></label>
+        </div>
+        <button class="button primary" id="save-config">保存高级设置</button>
+
+        <div class="section-heading nexus-heading"><div><p class="eyebrow">NEXUS</p><h2>设备配对</h2></div><p id="nexus-state">尚未连接</p></div>
+        <div class="nexus-grid">
+          <label><span>服务地址</span><input id="nexus-endpoint" value="https://mcp.nexusdock.co"></label>
+          <label><span>设备名称</span><input id="nexus-name" placeholder="例如：公司旧电脑"></label>
+          <label class="pair-code"><span>一次性配对码</span><input id="nexus-code" autocomplete="one-time-code"><button class="button secondary" id="pair-nexus">配对</button></label>
+        </div>
+        <div class="callout quiet"><strong>Coding Agent 保持现有配置</strong><span>此精简管理页不会覆盖已有 ACP Profile；需要调整时仍可使用命令行。</span></div>
+      </section>
+    </main>
+
+    <footer><span id="last-refresh">尚未刷新</span><button class="refresh" id="refresh">刷新状态</button></footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="busy" id="busy" hidden><div class="spinner"></div><span>正在应用，请稍候…</span></div>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

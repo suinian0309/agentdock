@@ -13,6 +13,7 @@ import (
 	"github.com/uvwt/agentdock/internal/buildinfo"
 	"github.com/uvwt/agentdock/internal/desktopruntime"
 	"github.com/uvwt/agentdock/internal/selfupdate"
+	"github.com/uvwt/agentdock/internal/webadmin"
 )
 
 func main() {
@@ -87,6 +88,9 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	}
 	if len(args) > 0 && args[0] == "uninstall" {
 		return runUninstallCommand(ctx, args[1:], stdout, stderr)
+	}
+	if len(args) > 0 && args[0] == "web-admin" {
+		return webadmin.Run(ctx, args[1:], stdout, stderr)
 	}
 	return runServer(ctx, args, stderr)
 }
