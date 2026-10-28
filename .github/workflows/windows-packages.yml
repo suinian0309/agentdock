@@ -1,0 +1,77 @@
+name: Windows Packages (Web and Service)
+
+on:
+  push:
+    branches: [main, codex/web-admin-installer]
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'core-skills/**'
+      - 'packaging/**'
+      - 'scripts/install/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/windows-packages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-packages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  packages:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.2'
+          cache: true
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Download pinned cloudflared and verify SHA256
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $component=Get-Content packaging/windows/headless/cloudflared.json -Raw | ConvertFrom-Json
+          New-Item -ItemType Directory -Path dist-components -Force | Out-Null
+          Invoke-WebRequest $component.url -OutFile dist-components/cloudflared.exe
+          $actual=(Get-FileHash dist-components/cloudflared.exe -Algorithm SHA256).Hash
+          if($actual -ne $component.sha256){throw 'cloudflared checksum mismatch'}
+      - name: Build unattended service package
+        shell: pwsh
+        run: |
+          $component=Get-Content packaging/windows/headless/cloudflared.json -Raw | ConvertFrom-Json
+          ./packaging/windows/build-windows-headless.ps1 -CloudflaredPath ./dist-components/cloudflared.exe -CloudflaredSHA256 $component.sha256 -Version "0.1.0-ci.$env:GITHUB_RUN_NUMBER"
+      - name: Upload service package
+        uses: actions/upload-artifact@v4
+        with:
+          name: AgentDock-Headless-Windows-amd64
+          path: dist-headless/*.zip
+          if-no-files-found: error
+          retention-days: 30
+      - name: Ensure Inno Setup is available
+        shell: pwsh
+        run: |
+          if(!(Get-Command ISCC.exe -ErrorAction SilentlyContinue) -and !(Test-Path "${env:ProgramFiles(x86)}/Inno Setup 6/ISCC.exe") -and !(Test-Path "${env:ProgramFiles(x86)}/Inno Setup 7/ISCC.exe")){
+            choco install innosetup --yes --no-progress
+            if($LASTEXITCODE -ne 0){throw 'Inno Setup installation failed'}
+          }
+      - name: Build existing Web installer
+        shell: pwsh
+        run: ./packaging/windows/build-windows-web-distribution.ps1 -Version "0.9.2-web.5-ci.$env:GITHUB_RUN_NUMBER"
+      - name: Upload Web installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: AgentDock-Web-Windows-amd64
+          path: |
+            dist-web-packages/AgentDock-Web-Setup-amd64.exe
+            dist-web-packages/agentdock_windows_amd64.zip
+            dist-web-packages/agentdock_windows_amd64.zip.sha256
+          if-no-files-found: error
+          retention-days: 30
