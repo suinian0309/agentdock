@@ -13,7 +13,7 @@
 ## 一次性准备与安装
 
 1. 在 Cloudflare 准备此主机使用的远程管理隧道、固定域名和 Tunnel Token。将该域名的源站设置为 `http://127.0.0.1:8765`，云端连接地址为 `https://域名/mcp`。本安装器不替你创建 Cloudflare 账号、域名或路由。
-2. 解压维护者构建的安装包，使用管理员 PowerShell 运行 `Install.ps1`。
+2. 先完整解压安装包，再双击 `Start-Install.cmd`，接受 Windows 管理员权限提示。不要直接双击服务 EXE；`Install.ps1` 仍可从已打开的管理员 PowerShell 中运行。
 3. 填写 MCP 公网地址、Tunnel Token。MCP Token 可留空，由安装器生成独立随机凭据。
 4. 确认安装：程序将复制文件、保存配置并注册启动两个服务。未自行运行公网连接测试。
 5. 按安装器提示执行 `connection --root <安装目录>`，读取此主机的地址与 MCP Token，在运维中枢主机管理中登记。这个命令输出敏感凭据，不要截图或写入普通日志。
@@ -63,3 +63,7 @@
 2026-10-28：已使用本机便携 Go1.27.2 编译服务版。工具链位于 C:\Users\Administrator\AppData\Local\Temp\codex-go-1.27.2\go\bin\go.exe，不依赖全局 PATH。服务EXE约21MB；不代表已经完成服务安装、无人登录和重启验收。
 
 新增 Windows Packages (Web and Service) 工作流：main 或 codex/web-admin-installer 上相关源码变化时自动构建，也可手动运行。每次提供 AgentDock-Headless-Windows-amd64 和 AgentDock-Web-Windows-amd64 两份 Actions Artifact，保留30天。构建不会安装服务、连接隧道或运行浏览器巡检。cloudflared 固定版本与SHA256在 packaging/windows/headless/cloudflared.json 中登记。
+
+## 安装窗口闪退修复（0.1.1）
+
+新增 Start-Install.cmd 和自动提权启动器；提权后的窗口在安装成功或失败时都会等待回车，失败会保留具体错误。中文PowerShell脚本按带BOM的UTF-8保存，兼容Windows PowerShell5.1。仅修改安装入口，服务二进制保持原版，不在开发机运行安装。

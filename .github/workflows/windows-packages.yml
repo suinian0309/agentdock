@@ -47,7 +47,7 @@ jobs:
         shell: pwsh
         run: |
           $component=Get-Content packaging/windows/headless/cloudflared.json -Raw | ConvertFrom-Json
-          ./packaging/windows/build-windows-headless.ps1 -CloudflaredPath ./dist-components/cloudflared.exe -CloudflaredSHA256 $component.sha256 -Version "0.1.0-ci.$env:GITHUB_RUN_NUMBER"
+          ./packaging/windows/build-windows-headless.ps1 -CloudflaredPath ./dist-components/cloudflared.exe -CloudflaredSHA256 $component.sha256 -Version "0.1.1-ci.$env:GITHUB_RUN_NUMBER"
       - name: Upload service package
         uses: actions/upload-artifact@v4
         with:

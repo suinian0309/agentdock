@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)][string]$CloudflaredPath,
@@ -24,7 +24,12 @@ try {
     & $Go build -trimpath -ldflags '-s -w' -o (Join-Path $package 'agentdock-service.exe') './cmd/agentdock-service'
     if ($LASTEXITCODE -ne 0) { throw '服务版编译失败，未生成可交付安装包' }
     Copy-Item -LiteralPath $CloudflaredPath -Destination (Join-Path $package 'cloudflared.exe')
-    foreach ($name in @('Install.ps1','Uninstall.ps1')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot ('headless\'+$name)) -Destination (Join-Path $package $name) }
+    foreach ($name in @('Install.ps1','Uninstall.ps1','Start-Install.ps1','Start-Install.cmd')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot ('headless\'+$name)) -Destination (Join-Path $package $name) }
+    # Windows PowerShell 5.1 requires a BOM for UTF-8 scripts with Chinese text.
+    foreach ($scriptName in @('Install.ps1','Uninstall.ps1','Start-Install.ps1')) {
+        $scriptFile=Join-Path $package $scriptName
+        [IO.File]::WriteAllText($scriptFile,[IO.File]::ReadAllText($scriptFile),[Text.UTF8Encoding]::new($true))
+    }
     Copy-Item -LiteralPath (Join-Path $repo 'docs\windows-headless-service.md') -Destination (Join-Path $package 'README.md')
     Copy-Item -LiteralPath (Join-Path $repo 'LICENSE') -Destination (Join-Path $package 'LICENSE-AgentDock')
     Copy-Item -LiteralPath (Join-Path $repo 'LICENSE') -Destination (Join-Path $package 'LICENSE-cloudflared')
